@@ -324,6 +324,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9d80fb6609c64140a8ec4f369dccede, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerCombatControler: {fileID: 79963671}
   target: {fileID: 1778250261}
   theteText: {fileID: 1755306861}
   leftRightText: {fileID: 1472123628}
@@ -338,7 +339,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 79963665}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 90fe406a4acbca34688494586299c5cc, type: 3}
+  m_Script: {fileID: 11500000, guid: 474ee6da417ee1c459e126f10e15b327, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   enemy: {fileID: 1778250262}
@@ -966,6 +967,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 790ab35b06e6d4046b5a989c48f64b8e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  targetCombatController: {fileID: 1778250262}
   player: {fileID: 79963670}
   radius: 1
   speed: 5
@@ -980,7 +982,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1778250256}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c2c39f4ec301511448ce2fac43f2df3a, type: 3}
+  m_Script: {fileID: 11500000, guid: 474ee6da417ee1c459e126f10e15b327, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   enemy: {fileID: 79963671}

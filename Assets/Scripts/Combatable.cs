@@ -27,6 +27,7 @@ public class Combatable : MonoBehaviour, ICombatable
 	public Vector3 Position => transform.position;
 	public float AttackAngle => attackAngle;
 	public float AttackSpeed => attackSpeed;
+	public float AttackCooldown => attackCooldown;
 
 	protected float attackCooldown = 0f;
 
@@ -35,6 +36,14 @@ public class Combatable : MonoBehaviour, ICombatable
 		if(enemy != null)
 		{
 			enemy.Died += Enemy_Died;
+		}
+	}
+
+	private void Update()
+	{
+		if(AttackCooldown >= 0f)
+		{
+			attackCooldown -= Time.deltaTime;
 		}
 	}
 
@@ -48,6 +57,14 @@ public class Combatable : MonoBehaviour, ICombatable
 		}
 	}
 
+	public void TryAttackEnemy()
+	{
+		if(EnemyInRange() && SeeEnemy() && AttackCooldown <= 0f)
+		{
+			AttackEnemy();
+		}
+	}
+
 	public void AttackEnemy()
 	{
 		enemy.ReceiveDamage(this, Damage);
@@ -56,6 +73,11 @@ public class Combatable : MonoBehaviour, ICombatable
 
 	public bool EnemyInRange()
 	{
+		if(enemy == null)
+		{
+			return false;
+		}
+
 		return AttackRange + enemy.Size > Vector3.Distance(transform.position, enemy.Position);
 	}
 
@@ -97,6 +119,7 @@ public interface ICombatable
 	Vector3 Position { get; }
 	//attacks per second
 	float AttackSpeed { get; }
+	float AttackCooldown { get; }
 
 	void ReceiveDamage(ICombatable damageDealer, float damage);
 	void AttackEnemy();

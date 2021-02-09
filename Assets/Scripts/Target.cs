@@ -3,6 +3,8 @@
 public class Target : MonoBehaviour, IRadius
 {
 	[SerializeField]
+	private Combatable targetCombatController;
+	[SerializeField]
 	private Player player;
 	[SerializeField]
 	private float radius;
@@ -27,6 +29,8 @@ public class Target : MonoBehaviour, IRadius
 
 	public void Update()
 	{
+		targetCombatController.TryAttackEnemy();
+
 		float distance = Vector3.Distance(targetPosition, transform.position);
 		
 		if(SeePlayer())

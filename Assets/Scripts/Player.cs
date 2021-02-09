@@ -6,6 +6,8 @@ public class Player : MonoBehaviour
 	private const float halfPi = Mathf.PI * 0.5f;
 
 	[SerializeField]
+	private Combatable playerCombatControler;
+	[SerializeField]
 	private Target target;
 	[SerializeField]
 	private Text theteText;
@@ -21,6 +23,11 @@ public class Player : MonoBehaviour
 
 	private void Update()
 	{
+		if(Input.GetKeyDown(KeyCode.Space))
+		{
+			playerCombatControler.TryAttackEnemy();
+		}
+
 		if(target == null)
 		{
 			return;

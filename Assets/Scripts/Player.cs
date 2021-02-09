@@ -3,6 +3,8 @@ using UnityEngine.UI;
 
 public class Player : MonoBehaviour, IRadius
 {
+	private const float halfPi = Mathf.PI * 0.5f;
+
 	[SerializeField]
 	private Target target;
 	[SerializeField]
@@ -22,13 +24,13 @@ public class Player : MonoBehaviour, IRadius
 		var vecForward = transform.forward;
 		var vecToEnemy = target.transform.position - transform.position;
 
-		theteText.text = (Mathf.Acos(Vector3.Dot(vecForward.normalized, vecToEnemy.normalized))).ToString();
+		theteText.text = (Mathf.Acos(Vector3.Dot(vecForward.normalized, vecToEnemy.normalized)) * Mathf.Rad2Deg).ToString();
 
 		var vecRight = transform.right;
 
-		string text = (Mathf.Acos(Vector3.Dot(vecRight.normalized, vecToEnemy.normalized))) <= Mathf.PI / 2 ? "right " : "left ";
+		string text = (Mathf.Acos(Vector3.Dot(vecRight.normalized, vecToEnemy.normalized))) <= halfPi ? "right " : "left ";
 
-		text += (Mathf.Acos(Vector3.Dot(vecForward.normalized, vecToEnemy.normalized))) <= Mathf.PI / 2 ? "forward" : "back";
+		text += (Mathf.Acos(Vector3.Dot(vecForward.normalized, vecToEnemy.normalized))) <= halfPi ? "forward" : "back";
 
 		leftRightText.text = text;
 

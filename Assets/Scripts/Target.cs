@@ -28,15 +28,15 @@ public class Target : MonoBehaviour, IRadius
 	public void Update()
 	{
 		float distance = Vector3.Distance(targetPosition, transform.position);
+		
+		if(SeePlayer())
+		{
+			SetNextTarget(player.transform.position);
+		}
 
 		if(PlayerInRange())
 		{
 			return;
-		}
-
-		if(SeePlayer())
-		{
-			SetNextTarget(player.transform.position);
 		}
 
 		if(distance < 0.1f)
@@ -86,7 +86,7 @@ public class Target : MonoBehaviour, IRadius
 	private void SetNextTarget(Vector3 position)
 	{
 		targetPosition = position;
-		transform.rotation = Quaternion.LookRotation(targetPosition - transform.position, Vector3.up);
+		LookAtTarget();
 	}
 
 	private void SetNextTarget()
@@ -94,5 +94,10 @@ public class Target : MonoBehaviour, IRadius
 		float x = UnityEngine.Random.Range(-10f, 10f);
 		float z = UnityEngine.Random.Range(-10f, 10f);
 		SetNextTarget(new Vector3(x, 0f, z));
+	}
+
+	private void LookAtTarget()
+	{
+		transform.rotation = Quaternion.LookRotation(targetPosition - transform.position, Vector3.up);
 	}
 }

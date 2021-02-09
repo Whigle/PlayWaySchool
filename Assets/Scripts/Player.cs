@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-public class Player : MonoBehaviour, IRadius
+public class Player : MonoBehaviour
 {
 	private const float halfPi = Mathf.PI * 0.5f;
 
@@ -21,6 +21,11 @@ public class Player : MonoBehaviour, IRadius
 
 	private void Update()
 	{
+		if(target == null)
+		{
+			return;
+		}
+
 		var vecForward = transform.forward;
 		var vecToEnemy = target.transform.position - transform.position;
 

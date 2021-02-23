@@ -5,6 +5,8 @@ using UnityEngine;
 public class Grid : MonoBehaviour
 {
 	[SerializeField]
+	private bool allowDiagonally = false;
+	[SerializeField]
 	private BoxCollider gridVolume;
 	[SerializeField]
 	private int width;
@@ -27,10 +29,13 @@ public class Grid : MonoBehaviour
 	private int oldWidth;
 	private int oldHeight;
 
+	private float debugDrawNodeXSize;
+	private float debugDrawNodeZSize;
+
 	private void Awake()
 	{
 		CreateGrid();
-		CalculatePath();
+		//CalculatePath();
 	}
 
 	[ContextMenu("Create Grid")]
@@ -57,6 +62,19 @@ public class Grid : MonoBehaviour
 				{
 					for(int l = Mathf.Max(0, j - 1); l <= Mathf.Min(j + 1, height - 1); l++)
 					{
+						if(!allowDiagonally)
+						{
+							//TODO: revert this if to not use else statement
+							if((k == i && j != l) || (k != i && j == l))
+							{
+
+							}
+							else
+							{
+								continue;
+							}
+						}
+
 						if(k != i || j != l)
 						{
 							neighbours.Add(nodes[k][l]);
@@ -67,57 +85,10 @@ public class Grid : MonoBehaviour
 				nodes[i][j].SetNeighbours(neighbours);
 			}
 		}
-
-		//for(int i = 0; i < width; i++)
-		//{
-		//	List<Node> neighbours = new List<Node>();
-
-		//	for(int j = 0; j < height; j++)
-		//	{
-		//		if(i > 0)
-		//		{
-		//			neighbours.Add(nodes[i - 1][j]);
-
-		//			if(j > 0)
-		//			{
-		//				neighbours.Add(nodes[i - 1][j - 1]);
-		//			}
-		//			if(j < height - 1)
-		//			{
-		//				neighbours.Add(nodes[i - 1][j + 1]);
-		//			}
-		//		}
-
-		//		if(i < width - 1)
-		//		{
-		//			neighbours.Add(nodes[i + 1][j]);
-
-		//			if(j > 0)
-		//			{
-		//				neighbours.Add(nodes[i + 1][j - 1]);
-		//			}
-		//			if(j < height - 1)
-		//			{
-		//				neighbours.Add(nodes[i + 1][j + 1]);
-		//			}
-		//		}
-
-		//		if(j > 0)
-		//		{
-		//			neighbours.Add(nodes[i][j - 1]);
-		//		}
-
-		//		if(j < height - 1)
-		//		{
-		//			neighbours.Add(nodes[i][j + 1]);
-		//		}
-
-		//		nodes[i][j].SetNeighbours(neighbours);
-		//	}
-		//}
 	}
 
 	private Vector3 lastStartPosition = Vector3.up;
+
 	private Vector3 lastEndPosition = Vector3.up;
 
 	private Node startNode;
@@ -135,8 +106,8 @@ public class Grid : MonoBehaviour
 			return;
 		}
 
-		ResetNodes();
-		CalculatePath();
+		//ResetNodes();
+		//CalculatePath();
 
 		lastStartPosition = startPositionT.position;
 		lastEndPosition = endPositionT.position;
@@ -153,6 +124,95 @@ public class Grid : MonoBehaviour
 				node.hCost = int.MaxValue / 10;
 			}
 		}
+	}
+
+	public Node CalculatePathToSpecialNode()
+	{
+		if(nodes == null || nodes.Length == 0)
+		{
+			return null;
+		}
+
+		List<Node> openNodes = new List<Node>();
+		List<Node> closedNodes = new List<Node>();
+
+		startNode = GetNodeClosestToPosition(endPositionT.position);
+		endNode = GetNodeClosestToPosition(endPositionT.position);
+
+		openNodes.Add(startNode);
+
+		startNode.gCost = 0;
+		startNode.hCost = GetHCost(startNode);
+
+		while(openNodes.Count > 0)
+		{
+			Node currentNode = openNodes.First();
+
+			IEnumerable<Node> neighbours = currentNode.Neighbours;
+
+			foreach(var neighbour in neighbours)
+			{
+				if(!neighbour.IsWalkable)
+				{
+					continue;
+				}
+
+				int newGCost = 0;
+
+				if(neighbour.X != currentNode.X && neighbour.Z != currentNode.Z)
+				{
+					newGCost = currentNode.gCost + 14;
+				}
+				else
+				{
+					newGCost = currentNode.gCost + 10;
+				}
+
+				if(neighbour.gCost > newGCost)
+				{
+					neighbour.gCost = newGCost;
+				}
+
+				if(!openNodes.Contains(neighbour) && !closedNodes.Contains(neighbour))
+				{
+					openNodes.Add(neighbour);
+					neighbour.hCost = GetHCost(neighbour);
+
+					if(IsNodeOutOfPlayerSight(neighbour))
+					{
+						UnityEngine.Debug.LogError(neighbour.Center + " " + neighbour.X + " " + neighbour.Z);
+
+						return StepNode(neighbour);
+					}
+				}
+			}
+
+			openNodes.RemoveAt(0);
+			openNodes.OrderBy(node => node.fCost);
+			closedNodes.Add(currentNode);
+		}
+
+		return null;
+	}
+
+	private Node StepNode(Node targetNode)
+	{
+
+		return targetNode;
+	}
+
+	private bool IsNodeOutOfPlayerSight(Node neighbour)
+	{
+		float distance = Vector3.Distance(neighbour.Center, (startPositionT.position - Vector3.up * 0.5f));
+		Vector3 direction = (neighbour.Center - (startPositionT.position - Vector3.up * 0.5f)).normalized;
+		Ray ray = new Ray(startPositionT.position, direction);
+
+		if(Physics.Raycast(ray, out RaycastHit hit, distance))
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	private void CalculatePath()
@@ -181,6 +241,11 @@ public class Grid : MonoBehaviour
 
 			foreach(var neighbour in neighbours)
 			{
+				if(!neighbour.IsWalkable)
+				{
+					continue;
+				}
+
 				int newGCost = 0;
 
 				if(neighbour.X != currentNode.X && neighbour.Z != currentNode.Z)
@@ -204,7 +269,6 @@ public class Grid : MonoBehaviour
 
 					if(neighbour == endNode)
 					{
-						Debug.Log(neighbour.fCost);
 						SavePath();
 
 						return;
@@ -250,7 +314,7 @@ public class Grid : MonoBehaviour
 		return (Mathf.Max(xOffset, zOffset) * 14) + Mathf.Abs(xOffset - zOffset) * 10;
 	}
 
-	private Node GetNodeClosestToPosition(Vector3 position)
+	public Node GetNodeClosestToPosition(Vector3 position)
 	{
 		List<Node> helperList = new List<Node>();
 
@@ -295,11 +359,15 @@ public class Grid : MonoBehaviour
 					{
 						Gizmos.color = Color.magenta;
 					}
+					else if(node.IsWalkable == false)
+					{
+						Gizmos.color = Color.red;
+					}
 					else
 					{
 						Gizmos.color = new Color(0.5f, 0.5f + node.X * 0.5f / width, 0.5f + node.Z * 0.5f / height);
 					}
-					Gizmos.DrawWireCube(node.Center, new Vector3(nodeXSize, 0f, nodeZSize));
+					Gizmos.DrawWireCube(node.Center, new Vector3(debugDrawNodeXSize, 0f, debugDrawNodeZSize));
 				}
 			}
 		}
@@ -313,8 +381,8 @@ public class Grid : MonoBehaviour
 		{
 			foreach(var node in path)
 			{
-				Gizmos.color = Color.black;
-				Gizmos.DrawSphere(node.Center, 1f);
+				Gizmos.color = Color.magenta;
+				Gizmos.DrawSphere(node.Center, 0.2f);
 			}
 		}
 
@@ -330,6 +398,8 @@ public class Grid : MonoBehaviour
 
 		nodeXSize = gridVolume.size.x / width;
 		nodeZSize = gridVolume.size.z / height;
+		debugDrawNodeXSize = nodeXSize * 0.95f;
+		debugDrawNodeZSize = nodeZSize * 0.95f;
 		nodeXOffset = nodeXSize * 0.5f;
 		nodeZOffset = nodeZSize * 0.5f;
 

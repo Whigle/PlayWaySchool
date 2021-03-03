@@ -2,337 +2,167 @@
 using System.Linq;
 using UnityEngine;
 
-public class Grid : MonoBehaviour
+public class Grid : MonoBehaviour, ISerializationCallbackReceiver
 {
 	[SerializeField]
 	private BoxCollider gridVolume;
 	[SerializeField]
-	private int width;
+	[Range(1, 100)]
+	private int nodesInRow = 20;
 	[SerializeField]
-	private int height;
-	[SerializeField]
-	private Node[][] nodes;
+	[Range(1, 100)]
+	private int nodesInColumn = 20;
 
 	[SerializeField]
-	private Transform startPositionT;
+	[HideInInspector]
+	private List<int> nodesInGridKeysSerialized;
+	[HideInInspector]
 	[SerializeField]
-	private Transform endPositionT;
+	private List<Node> nodesInGridValuesSerialized;
 
-	public float nodeXSize;
-	public float nodeZSize;
-	public float nodeXOffset;
-	public float nodeZOffset;
-	public Vector3 startingPosition;
+	[SerializeField]
+	private Node nodePrefab;
 
-	private int oldWidth;
-	private int oldHeight;
+	#region Helper Readonly Fields
+	[SerializeField]
+	[ReadOnly]
+	private float nodeXSize;
+	[SerializeField]
+	[ReadOnly]
+	private float nodeZSize;
+	[SerializeField]
+	[ReadOnly]
+	private float nodeXHalfSize;
+	[SerializeField]
+	[ReadOnly]
+	private float nodeZHalfSize;
+	[SerializeField]
+	[ReadOnly]
+	private Vector3 gridVolumeCenter;
+	[SerializeField]
+	[ReadOnly]
+	private Vector3 gridVolumePositionZero;
+	#endregion Helper Readonly Fields
+
+	private Dictionary<int, Node> nodesInGrid = new Dictionary<int, Node>();
+
+	public IReadOnlyDictionary<int, Node> NodesInGrid => nodesInGrid;
 
 	private void Awake()
 	{
 		CreateGrid();
-		CalculatePath();
+	}
+
+	public Node GetNodeClosestToPosition(Vector3 position)
+	{
+		if(nodesInGrid == null || nodesInGrid.Count == 0)
+		{
+			return null;
+		}
+
+		return nodesInGrid.Values.OrderBy(node => Vector3.Distance(position, node.transform.position)).First();
 	}
 
 	[ContextMenu("Create Grid")]
 	private void CreateGrid()
 	{
-		nodes = new Node[width][];
-
-		for(int i = 0; i < width; i++)
+		if(nodesInGrid != null || nodesInGrid.Count > 0)
 		{
-			nodes[i] = new Node[height];
-			for(int j = 0; j < height; j++)
-			{
-				nodes[i][j] = new Node() { X = i, Z = j, Center = startingPosition + (Vector3.right * nodeXSize * i) + (Vector3.forward * nodeZSize * j) };
-			}
+			ClearOldGrid();
 		}
 
-		for(int i = 0; i < width; i++)
+		nodesInGrid = new Dictionary<int, Node>(nodesInRow * nodesInColumn);
+		CreateScaleAndPositionNodes();
+
+		for(int x = 0; x < nodesInRow; x++)
 		{
-			for(int j = 0; j < height; j++)
+			for(int z = 0; z < nodesInColumn; z++)
 			{
 				List<Node> neighbours = new List<Node>();
 
-				for(int k = Mathf.Max(0, i - 1); k <= Mathf.Min(i + 1, width - 1); k++)
+				for(int k = Mathf.Max(0, x - 1); k <= Mathf.Min(x + 1, nodesInRow - 1); k++)
 				{
-					for(int l = Mathf.Max(0, j - 1); l <= Mathf.Min(j + 1, height - 1); l++)
+					for(int l = Mathf.Max(0, z - 1); l <= Mathf.Min(z + 1, nodesInColumn - 1); l++)
 					{
-						if(k != i || j != l)
+						if(k != x || z != l)
 						{
-							neighbours.Add(nodes[k][l]);
+							neighbours.Add(nodesInGrid[k * 100 + l]);
 						}
 					}
 				}
 
-				nodes[i][j].SetNeighbours(neighbours);
+				nodesInGrid[x * 100 + z].SetNeighbours(neighbours);
+			}
+		}
+	}
+
+	private void CreateScaleAndPositionNodes()
+	{
+		//prepare const values
+		SetConstValues();
+
+		for(int x = 0; x < nodesInRow; x++)
+		{
+			for(int z = 0; z < nodesInColumn; z++)
+			{
+				Node node = Instantiate(nodePrefab, GetPositionForCoordinates(x, z), Quaternion.identity, this.transform).GetComponent<Node>();
+				node.transform.localScale = GetScaleForNode();
+				node.X = x;
+				node.Z = z;
+				nodesInGrid.Add(x * 100 + z, node);
+			}
+		}
+	}
+
+	private void SetConstValues()
+	{
+		nodeXSize = gridVolume.size.x / (float)nodesInRow;
+		nodeXHalfSize = nodeXSize * 0.5f;
+		nodeZSize = gridVolume.size.z / (float)nodesInColumn;
+		nodeZHalfSize = nodeZSize * 0.5f;
+		gridVolumeCenter = gridVolume.center;
+		gridVolumePositionZero = gridVolume.center - gridVolume.size / 2f;
+	}
+
+	private Vector3 GetScaleForNode()
+	{
+		return new Vector3(nodeXSize, 1f, nodeZSize);
+	}
+
+	private Vector3 GetPositionForCoordinates(int x, int z)
+	{
+		return gridVolumePositionZero + new Vector3(nodeXHalfSize, 0f, nodeZHalfSize) + Vector3.right * x * nodeXSize + Vector3.forward * z * nodeZSize;
+	}
+
+	private void ClearOldGrid()
+	{
+		foreach(var nodeInGrid in nodesInGrid)
+		{
+			if(nodeInGrid.Value != null)
+			{
+				DestroyImmediate(nodeInGrid.Value.gameObject);
 			}
 		}
 
-		//for(int i = 0; i < width; i++)
-		//{
-		//	List<Node> neighbours = new List<Node>();
-
-		//	for(int j = 0; j < height; j++)
-		//	{
-		//		if(i > 0)
-		//		{
-		//			neighbours.Add(nodes[i - 1][j]);
-
-		//			if(j > 0)
-		//			{
-		//				neighbours.Add(nodes[i - 1][j - 1]);
-		//			}
-		//			if(j < height - 1)
-		//			{
-		//				neighbours.Add(nodes[i - 1][j + 1]);
-		//			}
-		//		}
-
-		//		if(i < width - 1)
-		//		{
-		//			neighbours.Add(nodes[i + 1][j]);
-
-		//			if(j > 0)
-		//			{
-		//				neighbours.Add(nodes[i + 1][j - 1]);
-		//			}
-		//			if(j < height - 1)
-		//			{
-		//				neighbours.Add(nodes[i + 1][j + 1]);
-		//			}
-		//		}
-
-		//		if(j > 0)
-		//		{
-		//			neighbours.Add(nodes[i][j - 1]);
-		//		}
-
-		//		if(j < height - 1)
-		//		{
-		//			neighbours.Add(nodes[i][j + 1]);
-		//		}
-
-		//		nodes[i][j].SetNeighbours(neighbours);
-		//	}
-		//}
+		nodesInGrid.Clear();
 	}
 
-	private Vector3 lastStartPosition = Vector3.up;
-	private Vector3 lastEndPosition = Vector3.up;
-
-	private Node startNode;
-	private Node endNode;
-
-	private void Update()
+	public void OnBeforeSerialize()
 	{
-		if(startPositionT == null || endPositionT == null)
+		nodesInGridKeysSerialized = nodesInGrid.Keys.ToList();
+		nodesInGridValuesSerialized = nodesInGrid.Values.ToList();
+	}
+
+	public void OnAfterDeserialize()
+	{
+		if(nodesInGrid != null && nodesInGrid.Count > 0)
 		{
 			return;
 		}
 
-		if(startPositionT.position == lastStartPosition && endPositionT.position == lastEndPosition)
+		for(int i = 0; i < nodesInGridKeysSerialized.Count(); i++)
 		{
-			return;
+			nodesInGrid.Add(nodesInGridKeysSerialized[i], nodesInGridValuesSerialized[i]);
 		}
-
-		ResetNodes();
-		CalculatePath();
-
-		lastStartPosition = startPositionT.position;
-		lastEndPosition = endPositionT.position;
-
-	}
-
-	private void ResetNodes()
-	{
-		foreach(var nodesRow in nodes)
-		{
-			foreach(var node in nodesRow)
-			{
-				node.gCost = int.MaxValue / 10;
-				node.hCost = int.MaxValue / 10;
-			}
-		}
-	}
-
-	private void CalculatePath()
-	{
-		if(nodes == null || nodes.Length == 0)
-		{
-			return;
-		}
-
-		List<Node> openNodes = new List<Node>();
-		List<Node> closedNodes = new List<Node>();
-
-		startNode = GetNodeClosestToPosition(startPositionT.position);
-		endNode = GetNodeClosestToPosition(endPositionT.position);
-
-		openNodes.Add(startNode);
-
-		startNode.gCost = 0;
-		startNode.hCost = GetHCost(startNode);
-
-		while(openNodes.Count > 0)
-		{
-			Node currentNode = openNodes.First();
-
-			IEnumerable<Node> neighbours = currentNode.Neighbours;
-
-			foreach(var neighbour in neighbours)
-			{
-				int newGCost = 0;
-
-				if(neighbour.X != currentNode.X && neighbour.Z != currentNode.Z)
-				{
-					newGCost = currentNode.gCost + 14;
-				}
-				else
-				{
-					newGCost = currentNode.gCost + 10;
-				}
-
-				if(neighbour.gCost > newGCost)
-				{
-					neighbour.gCost = newGCost;
-				}
-
-				if(!openNodes.Contains(neighbour) && !closedNodes.Contains(neighbour))
-				{
-					openNodes.Add(neighbour);
-					neighbour.hCost = GetHCost(neighbour);
-
-					if(neighbour == endNode)
-					{
-						Debug.Log(neighbour.fCost);
-						SavePath();
-
-						return;
-					}
-				}
-			}
-
-			openNodes.RemoveAt(0);
-			openNodes.OrderBy(node => node.fCost);
-			closedNodes.Add(currentNode);
-		}
-	}
-
-	public List<Node> path = new List<Node>();
-
-	private void SavePath()
-	{
-		path.Clear();
-
-		Node currentNode = endNode;
-		int i = width * height;
-		while(i > 0)
-		{
-			Node nextNode = currentNode.Neighbours.OrderBy(node => node.gCost).FirstOrDefault();
-
-			path.Add(nextNode);
-
-			if(nextNode == startNode)
-			{
-				return;
-			}
-
-			currentNode = nextNode;
-			i--;
-		}
-	}
-
-	private int GetHCost(Node node)
-	{
-		int xOffset = Mathf.Abs(endNode.X - node.X);
-		int zOffset = Mathf.Abs(endNode.Z - node.Z);
-
-		return (Mathf.Max(xOffset, zOffset) * 14) + Mathf.Abs(xOffset - zOffset) * 10;
-	}
-
-	private Node GetNodeClosestToPosition(Vector3 position)
-	{
-		List<Node> helperList = new List<Node>();
-
-		foreach(var nodesRow in nodes)
-		{
-			helperList.AddRange(nodesRow);
-		}
-
-		return helperList.Aggregate((closest, node) => (closest == null || Vector3.Distance(position, closest.Center) > Vector3.Distance(node.Center, position)) ? node : closest);
-	}
-
-	private void OnDrawGizmos()
-	{
-		Gizmos.color = Color.red;
-
-		if(oldWidth != width || oldHeight != height)
-		{
-			Recalculate();
-		}
-
-
-		if(nodes == null)
-		{
-			for(int i = 0; i < width * height; i++)
-			{
-				int x = i % width;
-				int z = i / width;
-				Gizmos.DrawWireCube(startingPosition + (Vector3.right * nodeXSize * x) + (Vector3.forward * nodeZSize * z), new Vector3(nodeXSize, 0f, nodeZSize));
-			}
-		}
-		else
-		{
-			foreach(var nodeRow in nodes)
-			{
-				foreach(var node in nodeRow)
-				{
-					if(node == startNode)
-					{
-						Gizmos.color = Color.yellow;
-					}
-					else if(node == endNode)
-					{
-						Gizmos.color = Color.magenta;
-					}
-					else
-					{
-						Gizmos.color = new Color(0.5f, 0.5f + node.X * 0.5f / width, 0.5f + node.Z * 0.5f / height);
-					}
-					Gizmos.DrawWireCube(node.Center, new Vector3(nodeXSize, 0f, nodeZSize));
-				}
-			}
-		}
-
-		if(gridVolume == null)
-		{
-			return;
-		}
-
-		if(path != null && path.Count > 0)
-		{
-			foreach(var node in path)
-			{
-				Gizmos.color = Color.black;
-				Gizmos.DrawSphere(node.Center, 1f);
-			}
-		}
-
-		Gizmos.DrawWireCube(gridVolume.transform.position, gridVolume.size);
-	}
-
-	private void Recalculate()
-	{
-		if(gridVolume == null)
-		{
-			return;
-		}
-
-		nodeXSize = gridVolume.size.x / width;
-		nodeZSize = gridVolume.size.z / height;
-		nodeXOffset = nodeXSize * 0.5f;
-		nodeZOffset = nodeZSize * 0.5f;
-
-		startingPosition = gridVolume.transform.position - gridVolume.size * 0.5f + Vector3.right * nodeXOffset + Vector3.forward * nodeZOffset;
 	}
 }

@@ -9,9 +9,9 @@ public class PathRequester : MonoBehaviour
 	[SerializeField]
 	private Grid grid;
 	[SerializeField]
-	private Transform startPositionT;
+	private MovableObject seeker;
 	[SerializeField]
-	private Transform endPositionT;
+	private MovableObject wanted;
 
 	private Vector3 lastStartPosition;
 	private Vector3 lastEndPosition;
@@ -20,12 +20,12 @@ public class PathRequester : MonoBehaviour
 	{
 		if(autoRequestOnMove)
 		{
-			if(startPositionT == null || endPositionT == null)
+			if(seeker == null || wanted == null)
 			{
 				return;
 			}
 
-			if(startPositionT.position == lastStartPosition && endPositionT.position == lastEndPosition)
+			if(seeker.Position == lastStartPosition && wanted.Position == lastEndPosition)
 			{
 				return;
 			}
@@ -37,8 +37,8 @@ public class PathRequester : MonoBehaviour
 	[ContextMenu("Request Path")]
 	private void RequestPath()
 	{
-		Node startNode = grid.GetNodeClosestToPosition(startPositionT.position);
-		Node endNode = grid.GetNodeClosestToPosition(endPositionT.position);
+		Node startNode = grid.GetNodeClosestToPosition(seeker.Position);
+		Node endNode = grid.GetNodeClosestToPosition(wanted.Position);
 
 		ClearColorsForNodes(grid.NodesInGrid);
 
@@ -49,8 +49,8 @@ public class PathRequester : MonoBehaviour
 			SetColorForNode(node, Color.green);
 		}
 
-		lastStartPosition = startPositionT.position;
-		lastEndPosition = endPositionT.position;
+		lastStartPosition = seeker.Position;
+		lastEndPosition = wanted.Position;
 	}
 
 	private void SetColorForNode(Node node, Color color)

@@ -20,6 +20,8 @@ public class Node : MonoBehaviour
 	public IReadOnlyCollection<Node> Neighbours => neighbours;
 	public Material Material => (material != null) ? material : material = GetComponentInChildren<MeshRenderer>().material;
 
+	public NodeState State = NodeState.Walkable;
+
 	private void OnDestroy()
 	{
 		Destroyed?.Invoke(this);
@@ -91,4 +93,9 @@ public class Node : MonoBehaviour
 	//{
 	//	this.neighbours = neighbours.ToArray();
 	//}
+}
+
+public enum NodeState
+{
+	Walkable, Unwalkable, Occupied
 }

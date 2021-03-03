@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 public class Grid : MonoBehaviour, ISerializationCallbackReceiver
 {
+	public event Action<Grid> GridCreated;
+
 	[SerializeField]
 	private BoxCollider gridVolume;
 	[SerializeField]
@@ -47,9 +50,16 @@ public class Grid : MonoBehaviour, ISerializationCallbackReceiver
 	private Dictionary<int, Node> nodesInGrid = new Dictionary<int, Node>();
 
 	public IReadOnlyDictionary<int, Node> NodesInGrid => nodesInGrid;
+	public float NodeXSize => nodeXSize;
+	public float NodeZSize => nodeZSize;
+	public int NodesInRow => nodesInRow;
+	public int NodesInColumn => nodesInColumn;
+
+	public static Grid Me { get; private set; }
 
 	private void Awake()
 	{
+		Me = this;
 		CreateGrid();
 	}
 
@@ -94,6 +104,8 @@ public class Grid : MonoBehaviour, ISerializationCallbackReceiver
 				nodesInGrid[x * 100 + z].SetNeighbours(neighbours);
 			}
 		}
+
+		GridCreated?.Invoke(this);
 	}
 
 	private void CreateScaleAndPositionNodes()

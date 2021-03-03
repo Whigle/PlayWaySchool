@@ -27,6 +27,11 @@ public class PathProvider
 
 			foreach(var neighbour in neighbours)
 			{
+				if(neighbour.State == NodeState.Unwalkable)
+				{
+					continue;
+				}
+
 				int newGCost = 0;
 
 				if(neighbour.X != currentNode.X && neighbour.Z != currentNode.Z)

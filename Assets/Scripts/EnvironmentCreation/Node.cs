@@ -27,6 +27,16 @@ public class Node : MonoBehaviour
 		Destroyed?.Invoke(this);
 	}
 
+	/// <summary>
+	/// Get Node for given direction, x in x world direction (left, right), y in z world direction (forward, back).
+	/// </summary>
+	/// <param name="direction">x and y should be at -1, 0 or 1.</param>
+	/// <returns>Neighbour Node in given direction.</returns>
+	public Node GetNeighbour(Vector2Int direction)
+	{
+		return neighbours.FirstOrDefault(node => node.X == X + direction.x && node.Z == Z + direction.y);
+	}
+
 	public void AddNeighbour(Node neighbour)
 	{
 		if(neighbours.Contains(neighbour))
@@ -84,15 +94,6 @@ public class Node : MonoBehaviour
 	{
 		RemoveNeighbours(neighbours);
 	}
-
-	//public int gCost = int.MaxValue / 10;
-	//public int hCost = int.MaxValue / 10;
-	//public int fCost => gCost + hCost;
-
-	//public void SetNeighbours(IEnumerable<Node> neighbours)
-	//{
-	//	this.neighbours = neighbours.ToArray();
-	//}
 }
 
 public enum NodeState

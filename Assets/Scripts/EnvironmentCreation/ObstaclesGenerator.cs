@@ -18,11 +18,19 @@ public class ObstaclesGenerator : MonoBehaviour
 	private void Awake()
 	{
 		grid.GridCreated += Grid_GridCreated;
+		grid.Destroyed += Grid_Destroyed;
+	}
+
+	private void Grid_Destroyed(Grid grid)
+	{
+		grid.GridCreated -= Grid_GridCreated;
+		grid.Destroyed -= Grid_Destroyed;
 	}
 
 	private void OnDestroy()
 	{
 		grid.GridCreated -= Grid_GridCreated;
+		grid.Destroyed -= Grid_Destroyed;
 	}
 
 	private void Grid_GridCreated(Grid grid)

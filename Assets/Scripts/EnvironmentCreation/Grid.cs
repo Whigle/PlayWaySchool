@@ -6,6 +6,7 @@ using UnityEngine;
 public class Grid : MonoBehaviour, ISerializationCallbackReceiver
 {
 	public event Action<Grid> GridCreated;
+	public event Action<Grid> Destroyed;
 
 	[SerializeField]
 	private BoxCollider gridVolume;
@@ -55,12 +56,39 @@ public class Grid : MonoBehaviour, ISerializationCallbackReceiver
 	public int NodesInRow => nodesInRow;
 	public int NodesInColumn => nodesInColumn;
 
-	public static Grid Me { get; private set; }
+	private static Grid me;
+	public static Grid Me
+	{
+		get
+		{
+			if(me == null)
+			{
+				me = FindObjectOfType<Grid>();
+			}
+
+			return me;
+		}
+	}
+
+	public bool IsCreated { get; private set; }
 
 	private void Awake()
 	{
-		Me = this;
+		me = this;
+		IsCreated = false;
 		CreateGrid();
+	}
+
+	private void OnDestroy()
+	{
+		Destroyed?.Invoke(this);
+	}
+
+	public Node GetNodeWithCoordinates(Vector2Int coordinates)
+	{
+		Vector2Int ValidatedCoordinates = new Vector2Int(Mathf.Clamp(coordinates.x, 0, NodesInRow), Mathf.Clamp(coordinates.y, 0, NodesInColumn));
+
+		return nodesInGrid[ValidatedCoordinates.x * 100 + ValidatedCoordinates.y];
 	}
 
 	public Node GetNodeClosestToPosition(Vector3 position)
@@ -71,6 +99,16 @@ public class Grid : MonoBehaviour, ISerializationCallbackReceiver
 		}
 
 		return nodesInGrid.Values.OrderBy(node => Vector3.Distance(position, node.transform.position)).First();
+	}
+
+	public Node GetFreeNodeClosestToPosition(Vector3 position)
+	{
+		if(nodesInGrid == null || nodesInGrid.Count == 0)
+		{
+			return null;
+		}
+
+		return nodesInGrid.Values.Where(node => node.State == NodeState.Walkable).OrderBy(node => Vector3.Distance(position, node.transform.position)).First();
 	}
 
 	[ContextMenu("Create Grid")]
@@ -105,6 +143,7 @@ public class Grid : MonoBehaviour, ISerializationCallbackReceiver
 			}
 		}
 
+		IsCreated = true;
 		GridCreated?.Invoke(this);
 	}
 

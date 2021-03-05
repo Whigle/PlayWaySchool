@@ -15,7 +15,7 @@ public class PathProvider
 		List<NodeData> openNodes = new List<NodeData>();
 		List<NodeData> closedNodes = new List<NodeData>();
 
-		NodeData nodeData = new NodeData(startNode) { gCost = -1, hCost = GetHCost(startNode, endNode) };
+		NodeData nodeData = new NodeData(startNode) { gCost = 0, hCost = GetHCost(startNode, endNode) };
 		relevantNodes.Add(startNode.X * 100 + startNode.Z, nodeData);
 		openNodes.Add(nodeData);
 
@@ -52,9 +52,9 @@ public class PathProvider
 				}
 				else
 				{
-					nodeData = new NodeData(neighbour) { gCost = newGCost, hCost = GetHCost(startNode, endNode) };
+					nodeData = new NodeData(neighbour) { gCost = newGCost, hCost = GetHCost(neighbour, endNode) };
 					relevantNodes.Add(neighbour.X * 100 + neighbour.Z, nodeData);
-					openNodes.Add(new NodeData(neighbour) { gCost = newGCost, hCost = GetHCost(neighbour, endNode) });
+					openNodes.Add(nodeData);
 
 					if(neighbour == endNode)
 					{
@@ -64,7 +64,7 @@ public class PathProvider
 			}
 
 			openNodes.RemoveAt(0);
-			openNodes.OrderBy(node => node.FCost);
+			openNodes = openNodes.OrderBy(node => node.hCost).ToList();
 			closedNodes.Add(currentNode);
 		}
 
@@ -82,7 +82,7 @@ public class PathProvider
 
 		while(true)
 		{
-			IEnumerable<NodeData> neighboursData = relevantNodes.Where(nodeData => nodeData.Node.Neighbours.Contains(currentNode.Node));
+			IEnumerable<NodeData> neighboursData = relevantNodes.Where(nodeData => nodeData.Node.Neighbours.Contains(currentNode.Node) && !path.Contains(nodeData.Node));
 			NodeData nextNode = neighboursData.OrderBy(nodeData => nodeData.gCost).FirstOrDefault();
 
 			path.Add(nextNode.Node);
@@ -101,7 +101,7 @@ public class PathProvider
 		int xOffset = Mathf.Abs(endNode.X - currentNode.X);
 		int zOffset = Mathf.Abs(endNode.Z - currentNode.Z);
 
-		return (Mathf.Max(xOffset, zOffset) * 14) + Mathf.Abs(xOffset - zOffset) * 10;
+		return (Mathf.Min(xOffset, zOffset) * 14) + Mathf.Abs(xOffset - zOffset) * 10;
 	}
 }
 

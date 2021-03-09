@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class PathProvider
 {
+	private static Dictionary<int, NodeData> relevantNodes = new Dictionary<int, NodeData>();
+	private static List<NodeData> openNodes = new List<NodeData>();
+	private static List<NodeData> closedNodes = new List<NodeData>();
+
 	public static List<Node> Provide(Grid grid, Node startNode, Node endNode)
 	{
 		if(startNode == endNode)
@@ -16,9 +20,9 @@ public class PathProvider
 			return new List<Node>(0);
 		}
 
-		Dictionary<int, NodeData> relevantNodes = new Dictionary<int, NodeData>();
-		List<NodeData> openNodes = new List<NodeData>();
-		List<NodeData> closedNodes = new List<NodeData>();
+		relevantNodes.Clear();
+		openNodes.Clear();
+		closedNodes.Clear();
 
 		NodeData nodeData = new NodeData(startNode) { gCost = 0, hCost = Node.OptimisticDistance(startNode, endNode) };
 		relevantNodes.Add(startNode.X * 100 + startNode.Z, nodeData);

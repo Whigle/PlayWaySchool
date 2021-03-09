@@ -8,6 +8,7 @@ public abstract class GridMover
 	protected float reversedSpeed = 1f;
 
 	public Transform Transform => transform;
+	public Node Node => node;
 	
 	public GridMover(Transform transform, float speed)
 	{

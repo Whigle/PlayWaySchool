@@ -56,6 +56,7 @@ public class ObstaclesGenerator : MonoBehaviour
 
 			spawnedObstacles.Add(Instantiate(obstaclePrefab, randomNode.transform));
 			randomNode.State = NodeState.Unwalkable;
+
 			obstaclesCount--;
 		}
 	}

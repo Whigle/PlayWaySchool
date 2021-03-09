@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PathRequester : MonoBehaviour
@@ -10,11 +11,15 @@ public class PathRequester : MonoBehaviour
 	private Grid grid;
 	[SerializeField]
 	private MovableObject wanted;
+	[SerializeField]
+	private bool hide;
 
 	private Vector3 lastStartPosition;
 	private Vector3 lastEndPosition;
 
 	private List<GridRequestedPathMover> pathRequesters = new List<GridRequestedPathMover>();
+
+	private Func<Node, bool> endNodePredicate;
 
 	private static PathRequester me;
 	public static PathRequester Me
@@ -54,7 +59,7 @@ public class PathRequester : MonoBehaviour
 	{
 		if(autoRequestOnMove)
 		{
-			if(pathRequesters == null || pathRequesters .Count == 0|| wanted == null)
+			if(pathRequesters == null || pathRequesters.Count == 0 || wanted == null)
 			{
 				return;
 			}
@@ -71,7 +76,28 @@ public class PathRequester : MonoBehaviour
 
 			foreach(var seeker in pathRequesters)
 			{
-				Queue<Node> pathToTarget = RequestPath(seeker.Transform, endNode);
+				Queue<Node> pathToTarget;
+				if(hide)
+				{
+					pathToTarget = RequestPath(seeker.Transform, (node) =>
+					{
+						//if(Node.OptimisticDistance(node, seeker.Node) > 70)
+						//{
+						//	return false;
+						//}
+
+						if(Physics.Linecast(node.transform.position + Vector3.up, wanted.transform.position, (1 << LayerMask.NameToLayer("Obstacles"))))
+						{
+							return true;
+						}
+
+						return false;
+					});
+				}
+				else
+				{
+					pathToTarget = RequestPath(seeker.Transform, endNode);
+				}
 				seeker.SetNewTargetAndPath(endNode, pathToTarget);
 			}
 		}
@@ -99,17 +125,38 @@ public class PathRequester : MonoBehaviour
 		return pathToTarget;
 	}
 
+	private Queue<Node> RequestPath(Transform seekerTransform, Func<Node, bool> endNodePredicate)
+	{
+		Node startNode = grid.GetNodeClosestToPosition(seekerTransform.position);
+
+		List<Node> path = PathProvider.Provide(grid, startNode, endNodePredicate);
+
+		foreach(var node in path)
+		{
+			SetColorForNode(node, Color.green);
+		}
+
+		Queue<Node> pathToTarget = new Queue<Node>(path.Count);
+
+		for(int i = path.Count - 1; i >= 0; i--)
+		{
+			pathToTarget.Enqueue(path[i]);
+		}
+
+		return pathToTarget;
+	}
+
 	private void SetColorForNode(Node node, Color color)
 	{
-		//node.Material.color = color;
+		node.Material.color = color;
 	}
 
 	private void ClearColorsForNodes(IReadOnlyDictionary<int, Node> nodesInGrid)
 	{
-		//foreach(var Node in nodesInGrid.Values)
-		//{
-		//	Node.Material.color = Color.white;
-		//}
+		foreach(var Node in nodesInGrid.Values)
+		{
+			Node.Material.color = Color.white;
+		}
 	}
 }
 

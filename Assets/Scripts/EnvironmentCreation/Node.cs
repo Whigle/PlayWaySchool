@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 public class Node : MonoBehaviour
@@ -11,6 +12,8 @@ public class Node : MonoBehaviour
 	private List<Node> neighbours;
 	[SerializeField]
 	private Material material;
+	[SerializeField]
+	public TMP_Text text;
 
 	[ReadOnly]
 	public int X;
@@ -25,6 +28,14 @@ public class Node : MonoBehaviour
 	private void OnDestroy()
 	{
 		Destroyed?.Invoke(this);
+	}
+
+	public static int OptimisticDistance(Node node1, Node node2)
+	{
+		int xOffset = Mathf.Abs(node1.X - node2.X);
+		int zOffset = Mathf.Abs(node1.Z - node2.Z);
+
+		return (Mathf.Min(xOffset, zOffset) * 14) + Mathf.Abs(xOffset - zOffset) * 10;
 	}
 
 	/// <summary>
